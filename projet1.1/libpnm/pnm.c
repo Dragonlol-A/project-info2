@@ -36,8 +36,8 @@ struct PNM_t {
 
 
 static void skip_comm(FILE *file);
-static int read_header(FILE *file, PNM *image);
 static int read_data(FILE *file, PNM *image);
+int read_header(FILE *file, PNM *image);
 
 
 // Code
@@ -51,7 +51,7 @@ void freePNM(PNM *image) {
 }
 
 
-static void skip_comm(FILE *file) {
+void skip_comm(FILE *file) {
    char c;
 
    while ((c = fgetc(file)) != EOF) {
@@ -196,7 +196,7 @@ int write_pnm(PNM *image, char* filename){
    if (image->type!=PBM)
       fprintf(file, "%u\n", image->max_value);
    
-   while (i<(image->height*image->width))
+   while (i<(image->height*image->width*3))
    {  
       fprintf(file,"%u ", image->pixel_values[i]);
       ++i;    

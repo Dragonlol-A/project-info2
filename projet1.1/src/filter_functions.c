@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <string.h>
+#include <math.h>
 
 #include "pnm.h" 
 
@@ -39,9 +40,10 @@ int read_header(FILE *file, PNM *image);
 
 int upside_down(PNM **image){
 
-   if ((*image)->pixel_values == NULL) return -1;
+   if (image == NULL || *image == NULL || (*image)->pixel_values == NULL) return -1;
 
-    unsigned image_size = (*image)->width * (*image)->height;
+   unsigned image_size = (*image)->width * (*image)->height;
+   fprintf(stderr, "image_size: %d\n", image_size);
 
     for (unsigned long i = 0; i < image_size/2; ++i) {
       unsigned long j = image_size - 1 - i;
@@ -67,7 +69,7 @@ int upside_down(PNM **image){
    if (strcmp("ppm", file_type_string((*image)->type)) == 1) return -2 ;//wrong format
 
    unsigned int p;
-
+   
    if (!strcmp(parametre, "r") || !strcmp(parametre, "R")) {
       p = 0;
    } else if (!strcmp(parametre, "v") || !strcmp(parametre, "V")) {
@@ -79,9 +81,9 @@ int upside_down(PNM **image){
    }
 
 
-   size_t image_size = (*image)->width * (*image)->height;
+   unsigned long image_size = (*image)->width * (*image)->height;
 
-   for (size_t i = 0; i < image_size; ++i) {
+   for (unsigned long i = 0; i < image_size; ++i) {
       unsigned temp = (*image)->pixel_values[3 * i + p];
       for (int a = 0; a < 3; ++a) (*image)->pixel_values[3 * i + a] = 0;
       (*image)->pixel_values[3 * i + p] = temp;
@@ -91,53 +93,47 @@ int upside_down(PNM **image){
 
 int negative(PNM **image) {
    if (image == NULL) return -1;
-   if (strcmp((*image)->type, file_type_string((*image)->type)) == 0) return -2 ;//wrong format
+   if (strcmp("ppm", file_type_string((*image)->type)) == 1) return -2 ;//wrong format
 
-   size_t image_size = get_width(image) * get_height(image) * 3;
+   unsigned long image_size = (*image)->width * (*image)->height * 3;
 
-   for (size_t i = 0; i < image_size; ++i) {
+   for (unsigned long i = 0; i < image_size; ++i) {
       (*image)->pixel_values[i] = (*image)->max_value - (*image)->pixel_values[i];
    }
    return 0;
 }
 
-int weird_named_function(PNM **image, const char *parametre) {
+int weird_named_function(PNM **image) {
    if (image == NULL) return -1;
-   if (parametre == NULL) return -3;// invalid parameter name or no parameter given
-   if (strcmp((*image)->type,file_type_string((*image)->type)) == 0) return -2 ;//wrong format
+   if (strcmp("ppm",file_type_string((*image)->type)) != 0) return -2 ;//wrong format
 
-   int grey_filter_mode;
 
-   if (sscanf(parametre, "%d", &grey_filter_mode) != 1) return -3; // invalid parameter name or no parameter given
-   if (grey_filter_mode != 1 && grey_filter_mode != 2) return -3; // //
-
-   size_t image_size = (*image)->width * (*image)->height;
+   unsigned long image_size = (*image)->width * (*image)->height;
 
    unsigned *transformed_pixel_value = malloc(image_size * sizeof(unsigned));
 
    if (transformed_pixel_value == NULL) return -4; // memory allocation failed
 
-   for (size_t i = 0; i < image_size; ++i) {
+   for (unsigned long i = 0; i < image_size; ++i) {
       int r = (*image)->pixel_values[3 * i];
       int g = (*image)->pixel_values[3 * i + 1];
       int b = (*image)->pixel_values[3 * i + 2];
-      switch (grey_filter_mode) {
-         case 1:
-         transformed_pixel_value[i] = round((r + g + b) / 3);
-            break;
-         case 2:
-         transformed_pixel_value[i] = round(0.299 * r + 0.587 * g + 0.114 * b);
-            break;
-      }
+
+      transformed_pixel_value[i] = (unsigned)round(0.299 * r + 0.587 * g + 0.114 * b);
+
       transformed_pixel_value[i] *= 255 / (*image)->max_value; // 255 is the max pixel value for PGM format 
+
    }
-
-
-   (*image)->type = "pgm";
-   (*image)->max_value = 255;
-   (*image)->pixel_values = transformed_pixel_value;
+   unsigned long size = image_size;
 
    free((*image)->pixel_values);
+   (*image)->pixel_values = NULL;
+
+   (*image)->pixel_values = transformed_pixel_value;
+   (*image)->type = PGM;
+   (*image)->max_value = 255;
+   (*image)->width = (*image)->width;
+   (*image)->height = (*image)->height;
 
    return 0;
 }
@@ -151,11 +147,6 @@ int black_and_white(PNM **image, char *parametre) {
    if (sscanf(parametre, "%d", &limit) != 1) return -3;//invalid or no parameter given
    
    if (limit < 0 || 255 < limit) return -3; //invalid or no parameter given
-
-   if (file_type_string((*image)->type) == "ppm") {
-      if (fifty_shades_of_grey(image, "2") != 0) return -4; //grey filter error
-   }
-
 
    unsigned long data_size = (*image)->width * (*image)->height;
 

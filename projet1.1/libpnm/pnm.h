@@ -90,7 +90,6 @@ int write_pnm(PNM *image, char* filename);
  */
 void freePNM(PNM *image);
 
-FileType get_file_type(PNM *image);
 
 int read_header(FILE *file, PNM *image);
 

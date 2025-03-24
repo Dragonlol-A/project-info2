@@ -1,0 +1,19 @@
+P1 # PBM
+
+# comm
+
+3 3
+
+### DATA ###
+
+1 # Max value
+
+   1  0 # comm
+0  0  0
+0  0  0
+
+# Extra data
+
+1 1 1
+
+# End
